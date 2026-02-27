@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mission Control</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0a0a0f;color:#e0e0e0;font-family:'Courier New',monospace;min-height:100vh;padding:24px}
+    header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1a1a2a;padding-bottom:16px;margin-bottom:28px;flex-wrap:wrap;gap:8px}
+    header h1{font-size:1.3rem;letter-spacing:.15em;color:#fff;text-transform:uppercase}
+    .timestamp{font-size:.72rem;color:#555}
+    .ticker-bar{background:#0d0d14;border:1px solid #1a1a2a;border-radius:8px;padding:12px 20px;display:flex;gap:28px;flex-wrap:wrap;margin-bottom:28px;font-size:.82rem;align-items:center}
+    .ticker-item{display:flex;gap:8px;align-items:center}
+    .ticker-item .label{color:#555}
+    .ticker-item .value{color:#fff;font-weight:bold;min-width:80px}
+    .ticker-item .change{font-size:.7rem}
+    .up{color:#2ecc71}.down{color:#e74c3c}.flat{color:#555}
+    .section-label{font-size:.7rem;color:#333;text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px}
+    .floor{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;margin-bottom:32px}
+    .desk{background:#111118;border:1px solid #1e1e2e;border-radius:12px;padding:18px;position:relative;transition:border-color .2s,transform .2s}
+    .desk:hover{border-color:#333;transform:translateY(-2px)}
+    .badge{position:absolute;top:14px;right:14px;font-size:.62rem;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.08em;font-weight:bold}
+    .online{background:#0d2e1a;color:#2ecc71;border:1px solid #2ecc71}
+    .watching{background:#1a1a0d;color:#f1c40f;border:1px solid #f1c40f}
+    .pending{background:#1a0d1a;color:#9b59b6;border:1px solid #9b59b6}
+    .desk .icon{font-size:1.8rem;margin-bottom:8px}
+    .desk .name{font-size:.95rem;font-weight:bold;color:#fff;margin-bottom:3px}
+    .desk .role{font-size:.68rem;color:#555;margin-bottom:12px;text-transform:uppercase;letter-spacing:.1em}
+    .stat-row{display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:5px;color:#777}
+    .stat-row span:last-child{color:#ccc}
+    .progress-bar{height:3px;background:#1e1e2e;border-radius:2px;margin-top:10px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:2px;transition:width 1s ease}
+    .fill-green{background:#2ecc71}.fill-yellow{background:#f1c40f}.fill-blue{background:#3498db}.fill-purple{background:#9b59b6}.fill-red{background:#e74c3c}
+    .pulse{animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .refresh-btn{background:#111;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:6px;font-family:'Courier New',monospace;font-size:.72rem;cursor:pointer;transition:all .2s}
+    .refresh-btn:hover{border-color:#555;color:#fff}
+    footer{text-align:center;font-size:.62rem;color:#2a2a2a;margin-top:32px;border-top:1px solid #111;padding-top:14px}
+    #live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2ecc71;margin-right:6px;vertical-align:middle}
+    .loading{color:#333;font-size:.75rem}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1><span id="live-dot" class="pulse"></span>Mission Control</h1>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <button class="refresh-btn" onclick="loadPrices()">↻ Refresh</button>
+    <span class="timestamp" id="last-updated">Loading...</span>
+  </div>
+</header>
+
+<div class="section-label">📡 Live Watchlist</div>
+<div class="ticker-bar" id="ticker">
+  <div class="ticker-item"><span class="label">FARTCOIN</span><span class="value loading" id="price-FARTCOIN">—</span></div>
+  <div class="ticker-item"><span class="label">SKR</span><span class="value loading" id="price-SKR">—</span></div>
+  <div class="ticker-item"><span class="label">SOL</span><span class="value loading" id="price-SOL">—</span></div>
+</div>
+
+<div class="section-label">👥 Office Floor</div>
+<div class="floor">
+
+  <div class="desk">
+    <span class="badge online">Online</span>
+    <div class="icon">📈</div>
+    <div class="name">Steffan</div>
+    <div class="role">Trading Copilot · AI Core</div>
+    <div class="stat-row"><span>Model</span><span>claude-sonnet-4-6</span></div>
+    <div class="stat-row"><span>Platform</span><span>SeekerClaw · Seeker</span></div>
+    <div class="stat-row"><span>Chain</span><span>Solana + Jupiter</span></div>
+    <div class="stat-row"><span>Risk</span><span>Medium → High</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-green" style="width:100%"></div></div>
+  </div>
+
+  <div class="desk">
+    <span class="badge watching">Watching</span>
+    <div class="icon">🎯</div>
+    <div class="name">Fartcoin Desk</div>
+    <div class="role">Take-Profit Monitor</div>
+    <div class="stat-row"><span>Current</span><span id="fc-current">—</span></div>
+    <div class="stat-row"><span>Baseline</span><span>$0.1558</span></div>
+    <div class="stat-row"><span>Target (TP)</span><span>$0.2029 (+30%)</span></div>
+    <div class="stat-row"><span>Progress</span><span id="fc-progress">—</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-yellow" id="fc-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="desk">
+    <span class="badge watching">Watching</span>
+    <div class="icon">📊</div>
+    <div class="name">SKR Desk</div>
+    <div class="role">Pump Alert Monitor</div>
+    <div class="stat-row"><span>Current</span><span id="skr-current">—</span></div>
+    <div class="stat-row"><span>Baseline</span><span>$0.02110</span></div>
+    <div class="stat-row"><span>Alert Trigger</span><span>$0.02216 (+5%)</span></div>
+    <div class="stat-row"><span>Progress</span><span id="skr-progress">—</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-blue" id="skr-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="desk">
+    <span class="badge online">Active</span>
+    <div class="icon">⏰</div>
+    <div class="name">Cron Room</div>
+    <div class="role">Scheduler · Heartbeat Engine</div>
+    <div class="stat-row"><span>Active jobs</span><span>1</span></div>
+    <div class="stat-row"><span>Job</span><span>Fartcoin TP Monitor</span></div>
+    <div class="stat-row"><span>Interval</span><span>Every 30m</span></div>
+    <div class="stat-row"><span>Heartbeat</span><span class="up pulse">●  Running</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-green" style="width:90%"></div></div>
+  </div>
+
+  <div class="desk">
+    <span class="badge online">Active</span>
+    <div class="icon">🧠</div>
+    <div class="name">Memory Vault</div>
+    <div class="role">Persistent Context Store</div>
+    <div class="stat-row"><span>MEMORY.md</span><span>262 B</span></div>
+    <div class="stat-row"><span>Daily files</span><span>4 sessions</span></div>
+    <div class="stat-row"><span>Total stored</span><span>2.96 KB</span></div>
+    <div class="stat-row"><span>Search index</span><span>SQL.js active</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-purple" style="width:15%"></div></div>
+  </div>
+
+  <div class="desk">
+    <span class="badge pending">Pending</span>
+    <div class="icon">🌐</div>
+    <div class="name">Intel Desk</div>
+    <div class="role">NFT Drop Scanner</div>
+    <div class="stat-row"><span>Tensor API</span><span>⏳ Key needed</span></div>
+    <div class="stat-row"><span>Magic Eden API</span><span>⏳ Key needed</span></div>
+    <div class="stat-row"><span>Status</span><span>Offline</span></div>
+    <div class="stat-row"><span>ETA</span><span>When keys added</span></div>
+    <div class="progress-bar"><div class="progress-fill fill-red" style="width:0%"></div></div>
+  </div>
+
+</div>
+
+<footer>
+  Steffan · SeekerClaw · OpenClaw 2026.2.25 · Prices via Jupiter · Auto-refreshes every 60s
+</footer>
+
+<script>
+  const BASELINE_FC  = 0.1558;
+  const TARGET_FC    = 0.2029;
+  const BASELINE_SKR = 0.02110;
+  const TARGET_SKR   = 0.02216;
+
+  function fmt(n, decimals) {
+    if (n === null || n === undefined) return '—';
+    return '$' + n.toFixed(decimals);
+  }
+
+  function pct(current, base) {
+    return (((current - base) / base) * 100).toFixed(2) + '%';
+  }
+
+  function barWidth(current, base, target) {
+    const range = target - base;
+    const progress = current - base;
+    const w = Math.min(100, Math.max(0, (progress / range) * 100));
+    return w.toFixed(1);
+  }
+
+  async function loadPrices() {
+    try {
+      const r = await fetch('/api/prices');
+      const json = await r.json();
+      if (!json.ok) return;
+
+      json.prices.forEach(p => {
+        const el = document.getElementById('price-' + p.symbol);
+        if (el && p.price !== null) {
+          const decimals = p.symbol === 'SOL' ? 2 : (p.symbol === 'SKR' ? 5 : 4);
+          el.textContent = fmt(p.price, decimals);
+          el.classList.remove('loading');
+        }
+
+        if (p.symbol === 'FARTCOIN' && p.price) {
+          document.getElementById('fc-current').textContent = fmt(p.price, 4);
+          const prog = pct(p.price, BASELINE_FC);
+          document.getElementById('fc-progress').textContent = prog + ' to TP';
+          document.getElementById('fc-bar').style.width = barWidth(p.price, BASELINE_FC, TARGET_FC) + '%';
+        }
+
+        if (p.symbol === 'SKR' && p.price) {
+          document.getElementById('skr-current').textContent = fmt(p.price, 5);
+          const prog = pct(p.price, BASELINE_SKR);
+          document.getElementById('skr-progress').textContent = prog + ' to trigger';
+          document.getElementById('skr-bar').style.width = barWidth(p.price, BASELINE_SKR, TARGET_SKR) + '%';
+        }
+      });
+
+      const now = new Date();
+      document.getElementById('last-updated').textContent =
+        'Updated ' + now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' CST';
+
+    } catch(e) {
+      document.getElementById('last-updated').textContent = 'Price fetch failed — retrying...';
+    }
+  }
+
+  loadPrices();
+  setInterval(loadPrices, 60000);
+</script>
+</body>
+</html>
