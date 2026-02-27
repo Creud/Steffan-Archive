@@ -1,4 +1,6 @@
-export default async function handler(req, res) {
+const https = require('https');
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
 
@@ -11,8 +13,17 @@ export default async function handler(req, res) {
   try {
     const ids = tokens.map(t => t.mint).join(',');
     const url = `https://lite-api.jup.ag/price/v2?ids=${ids}`;
-    const resp = await fetch(url);
-    const json = await resp.json();
+
+    const json = await new Promise((resolve, reject) => {
+      https.get(url, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch(e) { reject(e); }
+        });
+      }).on('error', reject);
+    });
 
     const result = tokens.map(t => {
       const d = json.data?.[t.mint];
@@ -27,4 +38,4 @@ export default async function handler(req, res) {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
-}
+};
